@@ -1,6 +1,3 @@
-# import glob
-# import shutil
-# import os
 from pathlib import Path
 import re
 from typing import Dict, List
@@ -22,7 +19,6 @@ class CreatePytorchDatasetFormat:
 		"""
 		if self.origin.exists():
 			p = Path(self.origin)
-			# breakpoint()
 			for path in p.rglob("*." + self.extension):
 				yield path
 		else:
@@ -66,11 +62,12 @@ class PartitionPytorchDatasetFormat(CreatePytorchDatasetFormat):
 	"""
 	Partition Pytorch dataset format to train, validation, and test
 	"""
-	def __init__(self, dataset_path: str, labels: List, training_size: float, random_state: int):
+	def __init__(self, origin: str, extension: str, labels: List, training_size: float, random_state: int):
 		"""
 		"""
 		super().__init__
-		self.origin = dataset_path
+		self.origin = origin
+		self.extension = extension
 		self.labels = labels
 		self.training_size = training_size
 		self.test_size = 1-training_size
@@ -78,7 +75,7 @@ class PartitionPytorchDatasetFormat(CreatePytorchDatasetFormat):
 
 	def _encode_labels(self):
 		"""
-		private method to encode labesl: List into label; Dict
+		private method to encode labels: List into label; Dict
 		"""
 		labels_dictionary = {}
 		for (index,label) in enumerate(self.labels):
@@ -94,7 +91,6 @@ class PartitionPytorchDatasetFormat(CreatePytorchDatasetFormat):
 		for image_path in self._read_origin():
 			for label in self._encode_labels():
 				if re.search(label, str(image_path)):
-					# breakpoint()
 					name.append(str(image_path))
 					target.append(label)
 		return np.array(name), np.array(target)
@@ -114,7 +110,6 @@ class PartitionPytorchDatasetFormat(CreatePytorchDatasetFormat):
 		for validation_index, test_index in sss.split(x_validation_test, y_validation_test):
 			x_validation, x_test = x_validation_test[validation_index], x_validation_test[test_index]
 			y_validation, y_test = y_validation_test[validation_index], y_validation_test[test_index]
-		# breakpoint()
 
 		return x_train,y_train,x_validation,y_validation,x_test,y_test
 
@@ -124,22 +119,28 @@ class PartitionPytorchDatasetFormat(CreatePytorchDatasetFormat):
 		Levels correspond to how much you want to move up in 
 		"""
 		x_train, y_train, x_validation, y_validation, x_test, y_test = self._stratify_sampling()
-		
-		for origin in x_train:
-			for label in self._encode_labels():	
-				if bool(re.search(label, origin)):
-					yield (Path(origin), Path(origin).parents[levels] / 'train' / label / Path(origin).name)
 
-		for origin in x_validation:
+		for train_origin in x_train:
 			for label in self._encode_labels():	
-				if bool(re.search(label, destination_path)):
-					yield (Path(destination_path), Path(destination_path).parents[levels] / 'validation' / label / Path(destination_path).name)
+				if bool(re.search(label, train_origin)):
+					train_origin = Path(train_origin)
+					destination = train_origin.parents[levels] / 'train' / label / train_origin.name
+					yield train_origin, destination
+
+		for validation_origin in x_validation:
+			for label in self._encode_labels():	
+				if bool(re.search(label, validation_origin)):
+					validation_origin = Path(validation_origin)
+					destination = validation_origin.parents[levels] / 'validation' / label / validation_origin.name
+					yield validation_origin, destination
 
 
-		for destination_path in x_test:
+		for test_origin in x_test:
 			for label in self._encode_labels():	
-				if bool(re.search(label, destination_path)):
-					yield (Path(destination_path), Path(destination_path).parents[levels] / 'test' / label / Path(destination_path).name)
+				if bool(re.search(label, test_origin)):
+					test_origin = Path(test_origin)
+					destination = test_origin.parents[levels] / 'test' / label / test_origin.name
+					yield test_origin, destination
 
 
 	def simulate_mark_and_recall(self, levels: int):
@@ -147,15 +148,13 @@ class PartitionPytorchDatasetFormat(CreatePytorchDatasetFormat):
 		run this to simulate the mark and recall.
 		level denotes how much you want to move up in the directory 
 		"""
-		for destination_path in self._mark(levels):
-			print("mark: ", destination_path[0]/n, "recall;", destination_path[1])
+		for origin, destination in self._mark(levels):
+			print("origin: ", origin, "destination;", destination)
 		
 	def mark_and_recall(self, levels: int):
-		for destination_path in self._mark(levels):
-			origin = destination_path[0]
-			destination = destination_path[1]
+		for origin, destination in self._mark(levels):
 			Path(destination).parents[0].mkdir(parents=True, exist_ok=True)
-			destination_path[0].replace(destination_path[1])
+			origin.replace(destination)
 
 
 
