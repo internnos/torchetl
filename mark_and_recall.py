@@ -7,68 +7,73 @@ from typing import Dict, List
 import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit
 
-real_path = Path.cwd() / 'data' / 'Replay-Attack' / 'ORI' / 'real'
-attack_path = Path.cwd() / 'data' / 'Replay-Attack' / 'ORI' / 'attack'
-ori_path = Path.cwd() / 'data' / 'Replay-Attack' / 'ORI' 
-
 
 class CreatePytorchDatasetFormat:
-	
-	def __init__(self, origin: str):
+	"""
+
+	"""
+	def __init__(self, origin: str, extension:str):
 		self.origin = origin
+		self.extension = extension
 		
 	def _read_origin(self):
+		"""
+		private method to only read files
+		"""
 		if self.origin.exists():
 			p = Path(self.origin)
-			for path in p.rglob("*.jpg"):
+			# breakpoint()
+			for path in p.rglob("*." + self.extension):
 				yield path
 		else:
 			raise ValueError("Directory does not exist")
 
 	def show_origin(self):
 		"""
-		simulate the images path you're inputting
+		show the origin, directly related with _read_origin
 		"""
 		for image_path in self._read_origin():
 			print(image_path)
 
 	def simulate_mark_and_recall(self, levels: int):
 		"""
-		simulate the destination path of your image
+		simulate the mark and recall process
+		levels correspond to how many levels you want to move up
 		"""
-		for destination_path, new_name in self.mark(levels):
-			print("Mark:", destination_path / new_name)
+		for origin, destination in zip(self._read_origin(), self._mark(levels)):
+			print("Origin:", origin, " Destination:", destination)
 
-	def mark(self, levels: int):
+	def _mark(self, levels: int):
 		"""
-		Mark destination
+		Private method Mark desired destination
 		"""
-		for image_path in self._read_origin():
-			destination_path = image_path.parents[levels-1].resolve()
-			parts = image_path.parts[-levels:]
+		for origin in self._read_origin():
+			destination = origin.parents[levels-1]
+			parts = origin.parts[-levels:]
 			new_name = ''.join(str(part) for part in parts)
-			yield destination_path, new_name
+			destination = destination / new_name
+			yield destination
 
-	def recall(self, levels: int, verbose=False):
+	def mark_and_recall(self, levels: int):
 		"""
 		levels correspond to how many levels you want to move up
 		"""
-		for image_path, (destination_path, new_name) in zip(self._read_origin(), self.mark(levels)):
-			image_path.replace(destination_path / new_name)
-			if verbose:
-				print(image_path, "is moved to", destination_path / new_name)
+		for origin, destination in zip(self._read_origin(), self._mark(levels)):
+			origin.replace(destination)
 
 
-class PartitionPytorchDataset(CreatePytorchDatasetFormat):
+class PartitionPytorchDatasetFormat(CreatePytorchDatasetFormat):
 	"""
-	Partition Pytorch dataset format to train, validation, and test. Since it inherits 
+	Partition Pytorch dataset format to train, validation, and test
 	"""
-	def __init__(self, dataset_path: str, labels: List, training_size: float, test_size:float, random_state: int):
+	def __init__(self, dataset_path: str, labels: List, training_size: float, random_state: int):
+		"""
+		"""
 		super().__init__
 		self.origin = dataset_path
 		self.labels = labels
 		self.training_size = training_size
-		self.test_size = test_size
+		self.test_size = 1-training_size
 		self.random_state = random_state
 
 	def _encode_labels(self):
@@ -98,34 +103,34 @@ class PartitionPytorchDataset(CreatePytorchDatasetFormat):
 		"""
 		private method to apply stratify sampling on the created array
 		"""
-		X, Y = self._create_dataset_array()
+		x, y = self._create_dataset_array()
 		sss = StratifiedShuffleSplit(n_splits=1, train_size=self.training_size, test_size=self.test_size, random_state=self.random_state)
 
-		for trainIndex, validationTestIndex in sss.split(X, Y):
-			xTrain, xValidationTest = X[trainIndex], X[validationTestIndex]
-			yTrain, yValidationTest = Y[trainIndex], Y[validationTestIndex]
+		for train_index, validation_test_index in sss.split(x, y):
+			x_train, x_validation_test = x[train_index], x[validation_test_index]
+			y_train, y_validation_test = y[train_index], y[validation_test_index]
 
 		sss = StratifiedShuffleSplit(n_splits=1, train_size=0.5, test_size=0.5,random_state=self.random_state)
-		for validationIndex, testIndex in sss.split(xValidationTest, yValidationTest):
-			xValidation, xTest = xValidationTest[validationIndex], xValidationTest[testIndex]
-			yValidation, yTest = yValidationTest[validationIndex], yValidationTest[testIndex]
+		for validation_index, test_index in sss.split(x_validation_test, y_validation_test):
+			x_validation, x_test = x_validation_test[validation_index], x_validation_test[test_index]
+			y_validation, y_test = y_validation_test[validation_index], y_validation_test[test_index]
 		# breakpoint()
 
-		return xTrain,yTrain,xValidation,yValidation,xTest,yTest
+		return x_train,y_train,x_validation,y_validation,x_test,y_test
 
-	def mark(self, levels):
+	def _mark(self, levels):
 		"""
-		private method to generate destination path. 
+		method to generate mark
 		Levels correspond to how much you want to move up in 
 		"""
 		x_train, y_train, x_validation, y_validation, x_test, y_test = self._stratify_sampling()
 		
-		for destination_path in x_train:
+		for origin in x_train:
 			for label in self._encode_labels():	
-				if bool(re.search(label, destination_path)):
-					yield (Path(destination_path), Path(destination_path).parents[levels] / 'train' / label / Path(destination_path).name)
+				if bool(re.search(label, origin)):
+					yield (Path(origin), Path(origin).parents[levels] / 'train' / label / Path(origin).name)
 
-		for destination_path in x_validation:
+		for origin in x_validation:
 			for label in self._encode_labels():	
 				if bool(re.search(label, destination_path)):
 					yield (Path(destination_path), Path(destination_path).parents[levels] / 'validation' / label / Path(destination_path).name)
@@ -142,14 +147,13 @@ class PartitionPytorchDataset(CreatePytorchDatasetFormat):
 		run this to simulate the mark and recall.
 		level denotes how much you want to move up in the directory 
 		"""
-		for destination_path in self.mark(levels):
-			print("mark: "destination_path[0], /n "recall;", destination_path[1])
+		for destination_path in self._mark(levels):
+			print("mark: ", destination_path[0]/n, "recall;", destination_path[1])
 		
-	def recall(self, levels: int):
-		for destination_path in self.mark(levels):
+	def mark_and_recall(self, levels: int):
+		for destination_path in self._mark(levels):
 			origin = destination_path[0]
 			destination = destination_path[1]
-			# breakpoint()
 			Path(destination).parents[0].mkdir(parents=True, exist_ok=True)
 			destination_path[0].replace(destination_path[1])
 
