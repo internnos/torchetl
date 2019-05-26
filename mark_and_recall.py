@@ -1,103 +1,80 @@
-from pathlib import Path
+# standardlib
+import csv
 import re
-from typing import Dict, List
+from pathlib import Path
+from typing import List, Tuple, Callable
+
+# external package
 import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit
+import pandas as pd
+import cv2
+import torch
+from torchvision import transforms, datasets
+from torch.utils.data import Dataset
 
+# user
+from base.dataset import BaseDataset
 
-class CreatePytorchDatasetFormat:
-	"""
+class MarkAndRecall(BaseDataset):
+	def __init__(self, parent_directory: str, extension: str, labels: List[str], training_size: float, random_state: int, verbose: bool) -> None:
+		"""Class for creating csv files of train, validation, and test
 
-	"""
-	def __init__(self, origin: str, extension:str):
-		self.origin = origin
-		self.extension = extension
-		
-	def _read_origin(self):
-		"""
-		private method to only read files
-		"""
-		if self.origin.exists():
-			p = Path(self.origin)
-			for path in p.rglob("*." + self.extension):
-				yield path
-		else:
-			raise ValueError("Directory does not exist")
+		Parameters
+		----------
+		parent_directory
+			The parent_directory folder path. It is highly recommended to use Pathlib
+		extension
+			The extension we want to include in our search from the parent_directory directory
+		labels
 
-	def show_origin(self):
+		Returns
+		-------
+		None	
 		"""
-		show the origin, directly related with _read_origin
-		"""
-		for image_path in self._read_origin():
-			print(image_path)
-
-	def simulate_mark_and_recall(self, levels: int):
-		"""
-		simulate the mark and recall process
-		levels correspond to how many levels you want to move up
-		"""
-		for origin, destination in zip(self._read_origin(), self._mark(levels)):
-			print("Origin:", origin, " Destination:", destination)
-
-	def _mark(self, levels: int):
-		"""
-		Private method Mark desired destination
-		"""
-		for origin in self._read_origin():
-			destination = origin.parents[levels-1]
-			parts = origin.parts[-levels:]
-			new_name = ''.join(str(part) for part in parts)
-			destination = destination / new_name
-			yield destination
-
-	def mark_and_recall(self, levels: int):
-		"""
-		levels correspond to how many levels you want to move up
-		"""
-		for origin, destination in zip(self._read_origin(), self._mark(levels)):
-			origin.replace(destination)
-
-
-class PartitionPytorchDatasetFormat(CreatePytorchDatasetFormat):
-	"""
-	Partition Pytorch dataset format to train, validation, and test
-	"""
-	def __init__(self, origin: str, extension: str, labels: List, training_size: float, random_state: int):
-		"""
-		"""
-		super().__init__
-		self.origin = origin
-		self.extension = extension
+		super().__init__(parent_directory, extension)
 		self.labels = labels
 		self.training_size = training_size
-		self.test_size = 1-training_size
+		self.test_size = 1 - training_size
 		self.random_state = random_state
+		self.verbose = verbose
 
-	def _encode_labels(self):
-		"""
-		private method to encode labels: List into label; Dict
-		"""
-		labels_dictionary = {}
-		for (index,label) in enumerate(self.labels):
-			labels_dictionary[label]=index
-		return labels_dictionary 
+	def _create_dataset_array(self) -> Tuple[np.ndarray, np.ndarray]:
+		"""Sklearn stratified sampling uses a whole array so we must build it first
 
-	def _create_dataset_array(self):
-		"""
-		private method to apply stratify sampling. In sklearn, we must build the whole array
+		Parameters
+		----------
+		None
+
+		Returns
+		-------
+		Tuple of X and y	
 		"""
 		target = []
 		name = []
-		for image_path in self._read_origin():
-			for label in self._encode_labels():
-				if re.search(label, str(image_path)):
-					name.append(str(image_path))
-					target.append(label)
+		
+		for parent_directory in self.read_files():
+			child = parent_directory.parts[len(self.parent_directory.parts):]
+			child = '/'.join(str(part) for part in child)
+			for encoded_label, label in enumerate(self.labels):
+				if re.search(label, child):
+					name.append(str(child))
+					target.append(encoded_label)
+		if self.verbose:
+			print("Finished creating whole dataset array")
+
 		return np.array(name), np.array(target)
 
-	def _stratify_sampling(self):
-		"""
-		private method to apply stratify sampling on the created array
+	def _stratify_sampling(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+		"""Sklearn stratified sampling uses a whole array so we must build it first
+
+		Parameters
+		----------
+		None
+
+		Returns
+		-------
+		Tuple of train(X, y), validation(X, y), and test(X, y)	
 		"""
 		x, y = self._create_dataset_array()
 		sss = StratifiedShuffleSplit(n_splits=1, train_size=self.training_size, test_size=self.test_size, random_state=self.random_state)
@@ -111,51 +88,149 @@ class PartitionPytorchDatasetFormat(CreatePytorchDatasetFormat):
 			x_validation, x_test = x_validation_test[validation_index], x_validation_test[test_index]
 			y_validation, y_test = y_validation_test[validation_index], y_validation_test[test_index]
 
-		return x_train,y_train,x_validation,y_validation,x_test,y_test
+		train = np.c_[x_train, y_train]
+		validation = np.c_[x_validation, y_validation]
+		test = np.c_[x_test, y_test]
 
-	def _mark(self, levels):
+		if self.verbose:
+			print("Finished splitting dataset into train, validation, and test")
+		return train, validation, test
+
+	def mark(self, filename: str, save_path: str):
+		"""Create csv file of train, validation, and test
+
+		Parameters
+		----------
+		filename
+			The prefix of train, validation, and test filename
+			Have the format of filename_train.csv, filename_validation.csv, and test_validation.csv
+		save_path
+			The parent_directory folder name of filename_train.csv, filename_validation.csv, and test_validation.csv
+
+		Returns
+		-------
+		train, validation, and test csv with the following name:
+		filename_train.csv, filename_validation.csv, and test_validation.csv	
 		"""
-		method to generate mark
-		Levels correspond to how much you want to move up in 
-		"""
-		x_train, y_train, x_validation, y_validation, x_test, y_test = self._stratify_sampling()
+		train, validation, test = self._stratify_sampling()
 
-		for train_origin in x_train:
-			for label in self._encode_labels():	
-				if bool(re.search(label, train_origin)):
-					train_origin = Path(train_origin)
-					destination = train_origin.parents[levels] / 'train' / label / train_origin.name
-					yield train_origin, destination
+		save_into = Path.cwd() / save_path
+		save_into.mkdir(parents=True, exist_ok=True)
 
-		for validation_origin in x_validation:
-			for label in self._encode_labels():	
-				if bool(re.search(label, validation_origin)):
-					validation_origin = Path(validation_origin)
-					destination = validation_origin.parents[levels] / 'validation' / label / validation_origin.name
-					yield validation_origin, destination
+		with open(f'{save_path}/{filename}_train.csv', 'w') as writer:
+			csv_writer = csv.writer(writer)
+			for row in train:
+				csv_writer.writerow(row)
 
-
-		for test_origin in x_test:
-			for label in self._encode_labels():	
-				if bool(re.search(label, test_origin)):
-					test_origin = Path(test_origin)
-					destination = test_origin.parents[levels] / 'test' / label / test_origin.name
-					yield test_origin, destination
-
-
-	def simulate_mark_and_recall(self, levels: int):
-		"""
-		run this to simulate the mark and recall.
-		level denotes how much you want to move up in the directory 
-		"""
-		for origin, destination in self._mark(levels):
-			print("origin: ", origin, "destination;", destination)
+		if self.verbose:
+			print(f'Finished writing {filename}_train.csv into {save_path}')
 		
-	def mark_and_recall(self, levels: int):
-		for origin, destination in self._mark(levels):
-			Path(destination).parents[0].mkdir(parents=True, exist_ok=True)
-			origin.replace(destination)
+
+		with open(f'{save_path}/{filename}_validation.csv', 'w') as writer:
+			csv_writer = csv.writer(writer)
+			for row in validation:
+				csv_writer.writerow(row)
+
+		if self.verbose:
+			print(f'Finished writing {filename}_validation.csv into {save_path}')
+
+		with open(f'{save_path}/{filename}_test.csv', 'w') as writer:
+			csv_writer = csv.writer(writer)
+			for row in test:
+				csv_writer.writerow(row)
+
+		if self.verbose:
+			print(f'Finished writing {filename}_test.csv into {save_path}')
+
+class CombinedDataset(Dataset):
+	def __init__(self, parent_directory: str, extension: str, csv_file: str, transform: Callable = None) -> None:
+		"""Class for reading csv files of train, validation, and test
+
+		Parameters
+		----------
+		parent_directory
+			The parent_directory folder path. It is highly recommended to use Pathlib
+		extension
+			The extension we want to include in our search from the parent_directory directory
+		csv_file
+			The path to csv file containing X and y
+		Transform
+			Callable which apply transformations
+
+		Returns
+		-------
+		None	
+		"""
+		self.parent_directory = parent_directory
+		self.extension = extension
+		self.csv_file = pd.read_csv(csv_file)
+		self.transform = transform
+	
+	def __len__(self) -> int:
+		"""Return the length of the dataset
+
+		Parameters
+		----------
+		parent_directory
+			The parent_directory folder path. It is highly recommended to use Pathlib
+		extension
+			The extension we want to include in our search from the parent_directory directory
+		csv_file
+			The path to csv file containing X and y
+		Transform
+			Callable which apply transformations
+
+		Returns
+		-------
+		Length of the dataset	
+		"""
+		return len(self.csv_file)
+
+	def __getitem__(self, idx: int) -> Tuple[np.ndarray, np.ndarray]:
+		"""Return the X and y of a specific instance based on the index
+
+		Parameters
+		----------
+		idx
+			The index of the instance 
+
+		Returns
+		-------
+		Tuple of X and y of a specific instance	
+		"""
+		parent_directory = self.parent_directory / self.csv_file.iloc[idx, 0]
+		target = self.csv_file.iloc[idx, 1]
+		parent_directory = cv2.imread(str(parent_directory))
+
+		if self.transform:
+			parent_directory = self.transform(parent_directory)
+
+		return parent_directory, target
 
 
+def main():
+
+	# create training, validation, and test csv
+	parent_directory = Path.cwd() / 'data' 
+	a = MarkAndRecall(parent_directory, "jpg", ["attack", "real"], 0.8, 69, verbose=True)
+	a.mark(filename="mfsd", save_path="data/mfsd")
+
+	# check individual dataset
+	mfsd_train_csv = str(parent_directory / "mfsd" / "mfsd_train.csv")
+
+	data_transform = transforms.Compose([
+	transforms.ToPILImage(),
+	transforms.RandomResizedCrop(224),
+	transforms.RandomHorizontalFlip(),
+	transforms.ToTensor(),
+	transforms.Normalize(
+						mean=[0.485, 0.456, 0.406],
+						std=[0.229, 0.224, 0.225])
+	])
+
+	c = CombinedDataset(parent_directory=parent_directory, extension="jpg", csv_file=mfsd_train_csv, transform=data_transform)
+	print(c.__getitem__(0))
 
 
+if __name__ == "__main__":
+	main()
