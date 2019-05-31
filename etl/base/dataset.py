@@ -47,31 +47,23 @@ class BaseDataset:
 		"""
 		try:
 			p = Path(self.parent_directory)
-			for origin in p.rglob("*." + self.extension):
-				yield origin
+			for file in p.rglob("*." + self.extension):
+				yield file
 		except:
 			raise ValueError("Directory does not exist")
 
-	def show_files(self) -> Sequence:
-		""" Show parent_directory directory
+	def show_files(self, n: int = None) -> Sequence:
+		""" Show files to consume
 
 		Parameters
 		----------
-		None
+		number_of_files_to_show
+			number of files to show
 
 		Returns
 		-------
 		origin
 			the path to read files
 		"""
-		for image_path in self.read_files():
-			print(image_path)
-
-
-def main():
-	parent_directory = Path.cwd().parent_directorys[0] / "data" / "ori" / "attack"
-	a = BaseDataset(parent_directory = parent_directory, extension="jpg")
-	a.show_parent_directory() 
-
-if __name__ == "__main__":
-	main()
+		files = [file for file in self.read_files()]
+		return files[:n]
