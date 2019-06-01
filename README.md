@@ -1,4 +1,4 @@
-# ETL
+# TorchETL
 
 If you're working on classification problem, with dataset that is available in their native format (jpg, bmp, etc) and have PyTorch in your arsenal, you'll most likely feel that the **DatasetFolder** or **ImageFolder** is not good enough. So does vanilla **torch.utils.data.Dataset**. This library attempts to bridge that gap to effectively Extract, Transform, and Load your data by extending **torch.utils.data.Dataset**.  
 
