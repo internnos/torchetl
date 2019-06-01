@@ -34,5 +34,5 @@ pip3 install torchetl
 
 ### Tutorial
 
-See Tutorial.ipynb
+See tutorial/Tutorial.ipynb
 
