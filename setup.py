@@ -1,4 +1,5 @@
 import setuptools
+from package import Package
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -18,4 +19,8 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
+    include_package_data=True,
+    cmdclass={
+        "package": Package
+    },
 )
