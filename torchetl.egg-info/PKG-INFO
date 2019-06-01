@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: torchetl
-Version: 0.0.3
+Version: 0.0.4
 Summary: Efficiently Extract, Transform, and Load your dataset into PyTorch models
 Home-page: https://github.com/amajidsinar/torchetl
 Author: jedi
@@ -18,19 +18,31 @@ Description: # TorchETL
         
         ### Prerequisites
         
-        Tested on Python 3.7.2
+        Python 3.7.2 (other versions might work if type checking is supported)
         
-        Other versions might work given type checking is supported
+        torch
         
+        torchvision
+        
+        numpy
+        
+        pandas
+        
+        opencv-python
+        
+        sklearn
+        
+        
+        Or simply download requirements.txt and fire 'pip3 install -r requirements.txt'
         
         ### Installing
         
-        pip3 install -r requirements.txt
+        pip3 install torchetl
         
         
         ### Tutorial
         
-        See Tutorial.ipynb
+        See tutorial/Tutorial.ipynb
         
         
 Platform: UNKNOWN
