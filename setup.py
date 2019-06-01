@@ -11,7 +11,7 @@ setuptools.setup(
     description="Efficiently Extract, Transform, and Load your dataset into PyTorch models",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/amajidsinar/ETL",
+    url="https://github.com/amajidsinar/torchetl",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
