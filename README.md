@@ -10,14 +10,20 @@ TransformAndLoad class would Transform and consume your dataset efficiently
 
 ### Prerequisites
 
-Tested on Python 3.7.2
+Python 3.7.2 (other versions might work if type checking is supported)
+torch==1.1.0
+torchvision==0.2.2.post3
+numpy==1.16.3
+pandas==0.24.2
+opencv-python
+sklearn
 
-Other versions might work given type checking is supported
 
+Or simply download requirements.txt and fire 'pip3 install -r requirements.txt'
 
 ### Installing
 
-pip3 install -r requirements.txt
+pip3 install torchetl
 
 
 ### Tutorial
