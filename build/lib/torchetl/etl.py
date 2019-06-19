@@ -177,73 +177,73 @@ class Extract(BaseDataset):
 		if self.verbose:
 			print(f'Finished writing {file_prefix}_test.csv into {save_into}')
 
-	class TransformAndLoad(Dataset):
-		def __init__(self, parent_directory: str, 
-					extension: str, 
-					csv_file: str, 
-					transform: Callable = None) -> None:
-			"""Class for reading csv files of train, validation, and test
+class TransformAndLoad(Dataset):
+	def __init__(self, parent_directory: str, 
+				extension: str, 
+				csv_file: str, 
+				transform: Callable = None) -> None:
+		"""Class for reading csv files of train, validation, and test
 
-			Parameters
-			----------
-			parent_directory
-				The parent_directory folder path. It is highly recommended to use Pathlib
-			extension
-				The extension we want to include in our search from the parent_directory directory
-			csv_file
-				The path to csv file containing X and y
-			Transform
-				Callable which apply transformations
+		Parameters
+		----------
+		parent_directory
+			The parent_directory folder path. It is highly recommended to use Pathlib
+		extension
+			The extension we want to include in our search from the parent_directory directory
+		csv_file
+			The path to csv file containing X and y
+		Transform
+			Callable which apply transformations
 
-			Returns
-			-------
-			None	
-			"""
-			self.parent_directory = parent_directory
-			self.extension = extension
-			self.transform = transform
-			try:
-				self.csv_file = pd.read_csv(csv_file)
-			except FileNotFoundError:
-				print(f'{Path.cwd() / csv_file} does not exist')
+		Returns
+		-------
+		None	
+		"""
+		self.parent_directory = parent_directory
+		self.extension = extension
+		self.transform = transform
+		try:
+			self.csv_file = pd.read_csv(csv_file)
+		except FileNotFoundError:
+			print(f'{Path.cwd() / csv_file} does not exist')
 
-		def __len__(self) -> int:
-			"""Return the length of the dataset
+	def __len__(self) -> int:
+		"""Return the length of the dataset
 
-			Parameters
-			----------
-			parent_directory
-				The parent_directory folder path. It is highly recommended to use Pathlib
-			extension
-				The extension we want to include in our search from the parent_directory directory
-			csv_file
-				The path to csv file containing X and y
-			Transform
-				Callable which apply transformations
+		Parameters
+		----------
+		parent_directory
+			The parent_directory folder path. It is highly recommended to use Pathlib
+		extension
+			The extension we want to include in our search from the parent_directory directory
+		csv_file
+			The path to csv file containing X and y
+		Transform
+			Callable which apply transformations
 
-			Returns
-			-------
-			Length of the dataset	
-			"""
-			return len(self.csv_file)
+		Returns
+		-------
+		Length of the dataset	
+		"""
+		return len(self.csv_file)
 
-		def __getitem__(self, idx: int) -> Tuple[np.ndarray, np.ndarray]:
-			"""Return the X and y of a specific instance based on the index
+	def __getitem__(self, idx: int) -> Tuple[np.ndarray, np.ndarray]:
+		"""Return the X and y of a specific instance based on the index
 
-			Parameters
-			----------
-			idx
-				The index of the instance 
+		Parameters
+		----------
+		idx
+			The index of the instance 
 
-			Returns
-			-------
-			Tuple of X and y of a specific instance	
-			"""
-			parent_directory = self.parent_directory / self.csv_file.iloc[idx, 0]
-			target = self.csv_file.iloc[idx, 1]
-			parent_directory = cv2.imread(str(parent_directory))
+		Returns
+		-------
+		Tuple of X and y of a specific instance	
+		"""
+		parent_directory = self.parent_directory / self.csv_file.iloc[idx, 0]
+		target = self.csv_file.iloc[idx, 1]
+		parent_directory = cv2.imread(str(parent_directory))
 
-			if self.transform:
-				parent_directory = self.transform(parent_directory)
+		if self.transform:
+			parent_directory = self.transform(parent_directory)
 
-			return parent_directory, target
+		return parent_directory, target
