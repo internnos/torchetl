@@ -1,8 +1,9 @@
 from torchetl.etl import Extract
 from pathlib import Path
 import pandas as pd
+import pdb
 
-parent_directory = 'data'
+parent_directory = Path.cwd() / 'data'
 
 combined_dataset = Extract(parent_directory = parent_directory, 
     extension = 'jpg', 
@@ -11,5 +12,6 @@ combined_dataset = Extract(parent_directory = parent_directory,
     random_state = 69,
     verbose = True
 )
-
+# pdb.set_trace()
+# combined_dataset._create_dataset_array()
 combined_dataset.extract(file_prefix='exp', save_path='data', is_random_sampling=False)
