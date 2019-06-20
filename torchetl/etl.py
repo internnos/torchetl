@@ -1,8 +1,9 @@
     # standardlib
 import csv
 import re
-from pathlib import Path
+from pathlib import Path, PosixPath
 from typing import List, Tuple, Callable
+
 
 # external package
 import numpy as np
@@ -20,7 +21,7 @@ import pdb
 
 class Extract(BaseDataset):
     def __init__(self, 
-                parent_directory: str, 
+                parent_directory: PosixPath, 
                 extension: str,
                 labels: List[str], 
                 train_size: float, 
@@ -31,7 +32,8 @@ class Extract(BaseDataset):
         Parameters
         ----------
         parent_directory
-            The parent_directory folder path. It is highly recommended to use Pathlib. Use relative path instead of full path
+            The parent_directory folder path. It is highly recommended to use Pathlib. Use full path
+            instead of relative path
         extension
             The extension we want to include in our search from the parent_directory directory
         labels
