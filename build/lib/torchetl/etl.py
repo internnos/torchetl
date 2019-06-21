@@ -205,7 +205,7 @@ class TransformAndLoad(Dataset):
         -------
         None	
         """
-        self.parent_directory = parent_directory
+        self.parent_directory = Path(parent_directory)
         self.extension = extension
         self.transform = transform
         try:

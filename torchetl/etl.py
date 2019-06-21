@@ -184,7 +184,8 @@ class Extract(BaseDataset):
             print(f'Finished writing {file_prefix}_test.csv into {save_into}')
 
 class TransformAndLoad(Dataset):
-    def __init__(self, parent_directory: str, 
+    def __init__(self, 
+                parent_directory: str, 
                 extension: str, 
                 csv_file: str, 
                 transform: Callable = None) -> None:
@@ -205,7 +206,7 @@ class TransformAndLoad(Dataset):
         -------
         None	
         """
-        self.parent_directory = parent_directory
+        self.parent_directory = Path(parent_directory)
         self.extension = extension
         self.transform = transform
         try:
