@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="torchetl",
-    version="0.1.0",
+    version="0.1.1",
     author="jedi",
     author_email="amajidsinar@gmail.com",
     description="Efficiently Extract, Transform, and Load your dataset into PyTorch models",

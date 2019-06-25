@@ -13,13 +13,14 @@ from torchvision import transforms, datasets
 from torch.utils.data import Dataset
 import pandas as pd
 import cv2
+import numpy as np
 
 # user
 from torchetl.base.dataset import BaseDataset
 
 import pdb
 
-class Extract(BaseDataset):
+class ExtractThreePartitions(BaseDataset):
     def __init__(self, 
                 parent_directory: PosixPath, 
                 extension: str,
@@ -35,48 +36,14 @@ class Extract(BaseDataset):
             The parent_directory folder path. It is highly recommended to use Pathlib. Use full path
             instead of relative path
         extension
-            The extension we want to include in our search from the parent_directory directory
+            The extension we want to include in our search from the parent_directory
         labels
 
         Returns
         -------
         None	
         """
-        super().__init__(parent_directory, extension)
-        self.labels = labels
-        self.train_size = train_size
-        self.test_size = 1 - train_size
-        self.random_state = random_state
-        self.verbose = verbose
-
-    def _create_dataset_array(self) -> Tuple[np.ndarray, np.ndarray]:
-        """Sklearn stratified sampling uses a whole array so we must build it first
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        Tuple of X and y	
-        """
-        target = []
-        filename = []
-        for parent_directory in self.read_files():
-            # list of folders leading to filename
-            child = parent_directory.parent.parts[len(Path.cwd().parts)+1:]
-            # path of folders leading to filename
-            child = Path(*child)
-            for encoded_label, label in enumerate(self.labels):
-                # not including the filename, only the directories leading to it
-                if re.search(label, str(child)):
-                    # append child path
-                    filename.append(str(child / parent_directory.name))
-                    target.append(encoded_label)
-        if self.verbose:
-            print("Finished creating whole dataset array")
-
-        return np.array(filename), np.array(target)
+        super().__init__(parent_directory, extension, labels, train_size, random_state, verbose)
 
     def _stratify_sampling(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Apply stratify sampling. Recommended for classification tasks
@@ -89,7 +56,9 @@ class Extract(BaseDataset):
         -------
         Tuple of train(X, y), validation(X, y), and test(X, y)	
         """
-        x, y = self._create_dataset_array()
+
+        x, y = self.create_dataset_array()
+
         sss = StratifiedShuffleSplit(n_splits=1, train_size=self.train_size, test_size=self.test_size, random_state=self.random_state)
 
         for train_index, validation_test_index in sss.split(x, y):
@@ -110,18 +79,18 @@ class Extract(BaseDataset):
         return train, validation, test
 
     def _random_sampling(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-        x, y = self._create_dataset_array()
+        x, y = self.create_dataset_array()
         x_train, x_validation_test, y_train, y_validation_test = train_test_split(x, 
-                                                                                y, 
-                                                                                train_size = self.train_size,
-                                                                                test_size = self.test_size, 
-                                                                                random_state=self.random_state)
+                                                                                  y, 
+                                                                                  train_size = self.train_size,
+                                                                                  test_size = self.test_size, 
+                                                                                  random_state=self.random_state)
 
         x_validation, x_test, y_validation, y_test = train_test_split(x_validation_test,
-                                                                    y_validation_test,
-                                                                    train_size = 0.5,
-                                                                    test_size = 0.5,
-                                                                    random_state = self.random_state)
+                                                                      y_validation_test,
+                                                                      train_size = 0.5,
+                                                                      test_size = 0.5,
+                                                                      random_state = self.random_state)
 
         train = np.c_[x_train, y_train]
         validation = np.c_[x_validation, y_validation]
@@ -183,8 +152,126 @@ class Extract(BaseDataset):
         if self.verbose:
             print(f'Finished writing {file_prefix}_test.csv into {save_into}')
 
+
+class ExtractTwoPartitions(BaseDataset):
+    def __init__(self, 
+                parent_directory: PosixPath, 
+                extension: str,
+                labels: List[str], 
+                train_size: float, 
+                random_state: int, 
+                verbose: bool) -> None:
+        """Class for creating csv files of train, validation
+
+        Parameters
+        ----------
+        parent_directory
+            The parent_directory folder path. It is highly recommended to use Pathlib. Use full path
+            instead of relative path
+        extension
+            The extension we want to include in our search from the parent_directory
+        labels
+
+        Returns
+        -------
+        None	
+        """
+        super().__init__(parent_directory, extension, labels, train_size, random_state, verbose)
+
+    def _stratify_sampling(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Apply stratify sampling. Recommended for classification tasks
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        Tuple of train(X, y), validation(X, y), and test(X, y)	
+        """
+
+        x, y = self.create_dataset_array()
+
+        sss = StratifiedShuffleSplit(n_splits=1, train_size=self.train_size, test_size=self.test_size, random_state=self.random_state)
+
+        for train_index, validation_test_index in sss.split(x, y):
+            x_train, x_validation_test = x[train_index], x[validation_test_index]
+            y_train, y_validation_test = y[train_index], y[validation_test_index]
+
+
+        train = np.c_[x_train, y_train]
+        validation = np.c_[x_validation_test, y_validation_test]
+
+
+        if self.verbose:
+            print("Finished splitting dataset into train, validation")
+        return train, validation
+
+    def _random_sampling(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        x, y = self.create_dataset_array()
+        x_train, x_validation_test, y_train, y_validation_test = train_test_split(x, 
+                                                                                  y, 
+                                                                                  train_size = self.train_size,
+                                                                                  test_size = self.test_size, 
+                                                                                  random_state=self.random_state)
+
+
+        train = np.c_[x_train, y_train]
+        validation = np.c_[x_validation_test, y_validation_test]
+
+        if self.verbose:
+            print("Finished splitting dataset into train, validation, and test")
+        return train, validation
+
+
+    def extract(self, file_prefix: str, save_path: str, is_random_sampling: bool):
+        """Create csv file of train, validation
+
+        Parameters
+        ----------
+        file_prefix
+            The prefix of train, validation, and test file_prefix
+            Have the format of file_prefix_train.csv, file_prefix_validation.csv, and test_validation.csv
+        save_path
+            The parent_directory folder name of file_prefix_train.csv, file_prefix_validation.csv, and test_validation.csv
+        is_random_sampling
+            extract train, validation, and test based on random sampling. If set to false, then stratify sampling is applied.
+            The best practice is to use stratify sampling for classification tasks and random sampling for regression tasks
+        Returns
+        -------
+        train, validation, and test csv with the following name:
+        file_prefix_train.csv, file_prefix_validation.csv, and test_validation.csv	
+        """
+        if is_random_sampling:
+            train, validation = self._random_sampling()
+        else:
+            train, validation = self._stratify_sampling()
+
+        save_into = Path.cwd() / save_path
+        save_into.mkdir(parents=True, exist_ok=True)
+
+        with open(f'{save_path}/{file_prefix}_train.csv', 'w') as writer:
+            csv_writer = csv.writer(writer)
+            for row in train:
+                csv_writer.writerow(row)
+
+        if self.verbose:
+            print(f'Finished writing {file_prefix}_train.csv into {save_into}')
+        
+
+        with open(f'{save_path}/{file_prefix}_validation.csv', 'w') as writer:
+            csv_writer = csv.writer(writer)
+            for row in validation:
+                csv_writer.writerow(row)
+
+        if self.verbose:
+            print(f'Finished writing {file_prefix}_validation.csv into {save_into}')
+
+
+
 class TransformAndLoad(Dataset):
-    def __init__(self, parent_directory: str, 
+    def __init__(self, 
+                parent_directory: str, 
                 extension: str, 
                 csv_file: str, 
                 transform: Callable = None) -> None:
