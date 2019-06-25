@@ -1,11 +1,11 @@
-from torchetl.etl import Extract
+from torchetl.etl import ExtractTwoPartitions
 from pathlib import Path
 import pandas as pd
 import pdb
 
 parent_directory = Path.cwd() / 'data'
 
-combined_dataset = Extract(parent_directory = parent_directory, 
+combined_dataset = ExtractTwoPartitions(parent_directory = parent_directory, 
     extension = 'jpg', 
     labels = ['attack', 'real'], 
     train_size = 0.8,
