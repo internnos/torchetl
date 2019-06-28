@@ -274,7 +274,8 @@ class TransformAndLoad(Dataset):
                 parent_directory: str, 
                 extension: str, 
                 csv_file: str, 
-                transform: Callable = None) -> None:
+                transform: Callable = None,
+                is_bbox_available: False) -> None:
         """Class for reading csv files of train, validation, and test
 
         Parameters
@@ -295,6 +296,7 @@ class TransformAndLoad(Dataset):
         self.parent_directory = Path(parent_directory)
         self.extension = extension
         self.transform = transform
+        self.is_bbox_available = is_bbox_available
         try:
             self.csv_file = pd.read_csv(csv_file)
         except FileNotFoundError:
@@ -336,6 +338,10 @@ class TransformAndLoad(Dataset):
         target = self.csv_file.iloc[idx, 1]
         parent_directory = cv2.imread(str(parent_directory))
 
+        if self.is_bbox_available:
+            # bbox is xmin, ymin, xmax, ymax
+            x_min, y_min, x_max, y_max = self.csv_file.iloc[idx, 2]
+            parent_directory = parent_directory[y_min:y_max, x_min:x_max]
         if self.transform:
             parent_directory = self.transform(parent_directory)
 
