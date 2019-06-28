@@ -334,15 +334,14 @@ class TransformAndLoad(Dataset):
         -------
         Tuple of X and y of a specific instance	
         """
-        parent_directory = self.parent_directory / self.csv_file.iloc[idx, 0]
+        image_path = self.parent_directory / self.csv_file.iloc[idx, 0]
         target = self.csv_file.iloc[idx, 1]
-        parent_directory = cv2.imread(str(parent_directory))
-
+        image_array = cv2.imread(str(image_path))
+        
         if self.is_bbox_available:
-            # bbox is xmin, ymin, xmax, ymax
-            x_min, y_min, x_max, y_max = self.csv_file.iloc[idx, 2]
-            parent_directory = parent_directory[y_min:y_max, x_min:x_max]
+            x_min, y_min, x_max, y_max = self.csv_file.iloc[idx, 2:]
+            image_array = image_array[y_min:y_max, x_min:x_max]
         if self.transform:
-            parent_directory = self.transform(parent_directory)
+            image_array = self.transform(image_array)
 
-        return parent_directory, target
+        return image_array, target
