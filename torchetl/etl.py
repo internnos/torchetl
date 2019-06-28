@@ -275,7 +275,7 @@ class TransformAndLoad(Dataset):
                 extension: str, 
                 csv_file: str, 
                 transform: Callable = None,
-                is_bbox_available: False) -> None:
+                is_bbox_available : bool = False) -> None:
         """Class for reading csv files of train, validation, and test
 
         Parameters
