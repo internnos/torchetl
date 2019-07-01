@@ -2,7 +2,7 @@
 import csv
 import re
 from pathlib import Path, PosixPath
-from typing import List, Tuple, Callable
+from typing import List, Tuple, Callable, Optional
 
 
 # external package
@@ -275,7 +275,9 @@ class TransformAndLoad(Dataset):
                 extension: str, 
                 csv_file: str, 
                 transform: Callable = None,
-                is_bbox_available : bool = False) -> None:
+                is_bbox_available : bool = False,
+                resize_to: Optional[Tuple[int,int]] = (640,480)
+                ) -> None:
         """Class for reading csv files of train, validation, and test
 
         Parameters
@@ -297,6 +299,7 @@ class TransformAndLoad(Dataset):
         self.extension = extension
         self.transform = transform
         self.is_bbox_available = is_bbox_available
+        self.resize_to = resize_to
         try:
             self.csv_file = pd.read_csv(csv_file)
         except FileNotFoundError:
@@ -334,11 +337,14 @@ class TransformAndLoad(Dataset):
         -------
         Tuple of X and y of a specific instance	
         """
+        # pdb.set_trace()
         image_path = self.parent_directory / self.csv_file.iloc[idx, 0]
         target = self.csv_file.iloc[idx, 1]
         image_array = cv2.imread(str(image_path))
         
         if self.is_bbox_available:
+            # pdb.set_trace()
+            image_array = cv2.resize(image_array, self.resize_to)
             x_min, y_min, x_max, y_max = self.csv_file.iloc[idx, 2:]
             image_array = image_array[y_min:y_max, x_min:x_max]
         if self.transform:
