@@ -14,4 +14,4 @@ combined_dataset = ExtractTwoPartitions(parent_directory = parent_directory,
               verbose = True,
             )
 
-combined_dataset.extract("AFAD", parent_directory, False)
+combined_dataset.extract("combined", parent_directory, False)

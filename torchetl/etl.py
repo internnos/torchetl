@@ -253,7 +253,6 @@ class ExtractTwoPartitions(BaseDataset):
         train_df = pd.DataFrame(train)
         train_df.to_csv(f'{save_path}/{file_prefix}_train.csv', header=["path","label"], index=False)
 
-
         if self.verbose:
             print(f'Finished writing {file_prefix}_train.csv into {save_into}')
 
