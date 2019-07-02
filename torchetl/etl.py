@@ -250,13 +250,13 @@ class ExtractTwoPartitions(BaseDataset):
         save_into = Path.cwd() / save_path
         save_into.mkdir(parents=True, exist_ok=True)
 
-        train_df = pd.DataFrame(train)
-        train_df.to_csv(f'{save_path}/{file_prefix}_train.csv', header=["path","label"], index=False)
+        train_df = pd.DataFrame(train, columns=["path", "label"])
+        train_df.to_csv(f'{save_path}/{file_prefix}_train.csv', columns=["path", "label"], header=["path","label"], index=False)
 
         if self.verbose:
             print(f'Finished writing {file_prefix}_train.csv into {save_into}')
 
-        validation_df = pd.DataFrame(validation)
+        validation_df = pd.DataFrame(validation, columns=["path", "label"])
         validation_df.to_csv(f'{save_path}/{file_prefix}_validation.csv', header=["path","label"], index=False)
 
         if self.verbose:
