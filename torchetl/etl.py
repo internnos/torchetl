@@ -250,19 +250,15 @@ class ExtractTwoPartitions(BaseDataset):
         save_into = Path.cwd() / save_path
         save_into.mkdir(parents=True, exist_ok=True)
 
-        with open(f'{save_path}/{file_prefix}_train.csv', 'w') as writer:
-            csv_writer = csv.writer(writer)
-            for row in train:
-                csv_writer.writerow(row)
+        train_df = pd.DataFrame(train)
+        train_df.to_csv(f'{save_path}/{file_prefix}_train.csv', header=["path","label"], index=False)
+
 
         if self.verbose:
             print(f'Finished writing {file_prefix}_train.csv into {save_into}')
-        
 
-        with open(f'{save_path}/{file_prefix}_validation.csv', 'w') as writer:
-            csv_writer = csv.writer(writer)
-            for row in validation:
-                csv_writer.writerow(row)
+        validation_df = pd.DataFrame(validation)
+        validation_df.to_csv(f'{save_path}/{file_prefix}_validation.csv', header=["path","label"], index=False)
 
         if self.verbose:
             print(f'Finished writing {file_prefix}_validation.csv into {save_into}')
@@ -314,10 +310,18 @@ class TransformAndLoad(Dataset):
             The parent_directory folder path. It is highly recommended to use Pathlib
         extension
             The extension we want to include in our search from the parent_directory directory
-        csv_file
-            The path to csv file containing X and y
-        Transform
-            Callable which apply transformations
+        csv_filecsv_writer = csv.writer(writer)
+            for row in train:
+                csv_writer.writerow(row)
+            The path to csv file containcsv_writer = csv.writer(writer)
+            for row in train:
+                csv_writer.writerow(row)ing X and y
+        Transformcsv_writer = csv.writer(writer)
+            for row in train:
+                csv_writer.writerow(row)
+            Callable which apply transfocsv_writer = csv.writer(writer)
+            for row in train:
+                csv_writer.writerow(row)rmations
 
         Returns
         -------
