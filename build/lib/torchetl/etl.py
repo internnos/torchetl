@@ -363,7 +363,7 @@ class TransformAndLoad(Dataset):
         if self.apply_cropping and self.resize_to:
             assert not self.apply_face_alignment
             image_array = cv2.resize(image_array, self.resize_to)
-            x_min, y_min, x_max, y_max = self.csv_file.iloc[idx, 2:6]
+            x_min, y_min, x_max, y_max = self.csv_file.iloc[idx, 2:6].astype(int)
             image_array = image_array[y_min:y_max, x_min:x_max]
 
         if self.apply_face_alignment:
