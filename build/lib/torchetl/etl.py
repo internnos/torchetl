@@ -374,7 +374,9 @@ class TransformAndLoad(Dataset):
             [56.0252, 71.7366],
             [41.5493, 92.3655],
             [70.7299, 92.2041]], dtype=np.float32)
+            pdb.set_trace()
             landmark = self.csv_file.iloc[idx, 6:]
+
             landmark = landmark.reshape(5,2)
 
             dst = landmark.astype(np.float32)
