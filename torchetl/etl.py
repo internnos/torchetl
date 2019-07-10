@@ -14,6 +14,7 @@ from torch.utils.data import Dataset
 import pandas as pd
 import cv2
 import numpy as np
+from skimage import transform as trans
 
 # user
 from torchetl.base.dataset import BaseDataset
@@ -270,8 +271,9 @@ class TransformAndLoad(Dataset):
                 extension: str, 
                 csv_file: str, 
                 transform: Callable = None,
-                is_bbox_available : bool = False,
-                resize_to: Optional[Tuple[int,int]] = (640,480)
+                apply_face_cropping : bool = False,
+                resize_to: Optional[Tuple[int,int]] = (640,480),
+                apply_face_alignment: bool = False
                 ) -> None:
         """Class for reading csv files of train, validation, and test
 
@@ -282,9 +284,20 @@ class TransformAndLoad(Dataset):
         extension
             The extension we want to include in our search from the parent_directory directory
         csv_file
-            The path to csv file containing X and y
-        Transform
+            The path to csv file containing the information of the image. For the bare minimum it should contain path and label.
+            If apply_face_cropping is set to True, then it must contain bounding box for index 2 until 5
+            If apply_face_alignment is set to True, then it must contain bounding box for index 6 until 15
+        transform
             Callable which apply transformations
+        apply_face_cropping
+            Read description in csv_file
+            In addition, if apply_face_cropping is set to True, then apply_face_alignment must be set to False
+        resize_to
+            Resize the face after face cropping is applied. Set this only if apply_face_cropping is set to True
+        apply_face_alignment
+            Read description in csv_file
+            In addition, if apply_face_alignment is set to True, then apply_face_cropping must be set to False
+
 
         Returns
         -------
@@ -293,8 +306,10 @@ class TransformAndLoad(Dataset):
         self.parent_directory = Path(parent_directory)
         self.extension = extension
         self.transform = transform
-        self.is_bbox_available = is_bbox_available
+        self.apply_cropping = apply_face_cropping
         self.resize_to = resize_to
+        self.apply_face_alignment = apply_face_alignment
+
         try:
             self.csv_file = pd.read_csv(csv_file)
         except FileNotFoundError:
@@ -345,11 +360,29 @@ class TransformAndLoad(Dataset):
         target = self.csv_file.iloc[idx, 1]
         image_array = cv2.imread(str(image_path))
         
-        if self.is_bbox_available:
-            # pdb.set_trace()
+        if self.apply_cropping and self.resize_to:
+            assert not self.apply_face_alignment
             image_array = cv2.resize(image_array, self.resize_to)
-            x_min, y_min, x_max, y_max = self.csv_file.iloc[idx, 2:]
+            x_min, y_min, x_max, y_max = self.csv_file.iloc[idx, 2:6]
             image_array = image_array[y_min:y_max, x_min:x_max]
+
+        if self.apply_face_alignment:
+            assert not self.apply_cropping
+            src = np.array([
+            [38.2946, 51.6963],
+            [73.5318, 51.5014],
+            [56.0252, 71.7366],
+            [41.5493, 92.3655],
+            [70.7299, 92.2041]], dtype=np.float32)
+            landmark = self.csv_file.iloc[idx, 6:]
+            landmark = landmark.reshape(5,2)
+
+            dst = landmark.astype(np.float32)
+            tform = trans.SimilarityTransform()
+            tform.estimate(dst, src)
+            M = tform.params[0:2, :]
+            image_array = cv2.warpAffine(image_array, M, (112, 112), borderValue=0.0)
+
         if self.transform:
             image_array = self.transform(image_array)
 
