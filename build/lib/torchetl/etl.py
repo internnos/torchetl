@@ -270,10 +270,12 @@ class TransformAndLoad(Dataset):
                 parent_directory: str, 
                 extension: str, 
                 csv_file: str, 
+                bounding_box_column_index: List[int],
+                landmark_column_index: List[int], 
                 transform: Callable = None,
                 apply_face_cropping : bool = False,
+                apply_face_alignment: bool = False,
                 resize_to: Optional[Tuple[int,int]] = (640,480),
-                apply_face_alignment: bool = False
                 ) -> None:
         """Class for reading csv files of train, validation, and test
 
@@ -293,7 +295,7 @@ class TransformAndLoad(Dataset):
             Read description in csv_file
             In addition, if apply_face_cropping is set to True, then apply_face_alignment must be set to False
         resize_to
-            Resize the face after face cropping is applied. Set this only if apply_face_cropping is set to True
+            Resize input image to this value. Always set this value. By default is valued at (640,480)
         apply_face_alignment
             Read description in csv_file
             In addition, if apply_face_alignment is set to True, then apply_face_cropping must be set to False
@@ -307,8 +309,10 @@ class TransformAndLoad(Dataset):
         self.extension = extension
         self.transform = transform
         self.apply_face_cropping = apply_face_cropping
-        self.resize_to = resize_to
         self.apply_face_alignment = apply_face_alignment
+        self.resize_to = resize_to
+        self.bounding_box_column_index = bounding_box_column_index
+        self.landmark_column_index = landmark_column_index
 
         try:
             self.csv_file = pd.read_csv(csv_file)
@@ -360,14 +364,17 @@ class TransformAndLoad(Dataset):
         target = self.csv_file.iloc[idx, 1]
         image_array = cv2.imread(str(image_path))
         
-        if self.apply_face_cropping and self.resize_to:
+        if self.apply_face_cropping and self.bounding_box_column_index:
+            assert self.resize_to 
             assert not self.apply_face_alignment
-            pdb.set_trace()
+    
             image_array = cv2.resize(image_array, self.resize_to)
-            x_min, y_min, x_max, y_max = self.csv_file.iloc[idx, 2:6].astype(int)
+            bounding_box_index_start, bounding_box_index_end = self.bounding_box_column_index
+            x_min, y_min, x_max, y_max = self.csv_file.iloc[idx, bounding_box_index_start:bounding_box_index_end+1].astype(int)
             image_array = image_array[y_min:y_max, x_min:x_max]
 
-        if self.apply_face_alignment:
+        if self.apply_face_alignment and self.landmark_column_index:
+            assert self.resize_to
             assert not self.apply_face_cropping
 
             image_array = cv2.resize(image_array, self.resize_to)
@@ -378,7 +385,8 @@ class TransformAndLoad(Dataset):
             [41.5493, 92.3655],
             [70.7299, 92.2041]], dtype=np.float32)
             
-            landmark = self.csv_file.iloc[idx, 6:]
+            landmark_index_start, landmark_index_end = self.landmark_column_index
+            landmark = self.csv_file.iloc[idx, landmark_index_start:landmark_index_end+1]
             landmark = np.array(landmark, ndmin=2)
             landmark = landmark.reshape(5,2)
             dst = landmark.astype(np.float32)
