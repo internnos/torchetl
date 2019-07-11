@@ -156,7 +156,7 @@ class ExtractThreePartitions(BaseDataset):
 
 class ExtractTwoPartitions(BaseDataset):
     def __init__(self, 
-                parent_directory: PosixPath, idx
+                parent_directory: PosixPath,
                 extension: str,
                 labels: List[str], 
                 train_size: float, 
@@ -369,7 +369,7 @@ class TransformAndLoad(Dataset):
 
         if self.apply_face_alignment:
             assert not self.apply_face_cropping
-            
+
             image_array = cv2.resize(image_array, self.resize_to)
             src = np.array([
             [38.2946, 51.6963],
