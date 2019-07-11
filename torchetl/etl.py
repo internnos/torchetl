@@ -156,7 +156,7 @@ class ExtractThreePartitions(BaseDataset):
 
 class ExtractTwoPartitions(BaseDataset):
     def __init__(self, 
-                parent_directory: PosixPath, 
+                parent_directory: PosixPath, idx
                 extension: str,
                 labels: List[str], 
                 train_size: float, 
@@ -306,7 +306,7 @@ class TransformAndLoad(Dataset):
         self.parent_directory = Path(parent_directory)
         self.extension = extension
         self.transform = transform
-        self.apply_cropping = apply_face_cropping
+        self.apply_face_cropping = apply_face_cropping
         self.resize_to = resize_to
         self.apply_face_alignment = apply_face_alignment
 
@@ -360,7 +360,7 @@ class TransformAndLoad(Dataset):
         target = self.csv_file.iloc[idx, 1]
         image_array = cv2.imread(str(image_path))
         
-        if self.apply_cropping and self.resize_to:
+        if self.apply_face_cropping and self.resize_to:
             assert not self.apply_face_alignment
             pdb.set_trace()
             image_array = cv2.resize(image_array, self.resize_to)
@@ -368,7 +368,9 @@ class TransformAndLoad(Dataset):
             image_array = image_array[y_min:y_max, x_min:x_max]
 
         if self.apply_face_alignment:
-            assert not self.apply_cropping
+            assert not self.apply_face_cropping
+            
+            image_array = cv2.resize(image_array, self.resize_to)
             src = np.array([
             [38.2946, 51.6963],
             [73.5318, 51.5014],
