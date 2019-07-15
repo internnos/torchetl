@@ -275,7 +275,6 @@ class TransformAndLoad(Dataset):
                 transform: Callable = None,
                 apply_face_cropping : bool = False,
                 apply_face_alignment: bool = False,
-                resize_to: Optional[Tuple[int,int]] = (640,480),
                 ) -> None:
         """Class for reading csv files of train, validation, and test
 
@@ -310,7 +309,6 @@ class TransformAndLoad(Dataset):
         self.transform = transform
         self.apply_face_cropping = apply_face_cropping
         self.apply_face_alignment = apply_face_alignment
-        self.resize_to = resize_to
         self.bounding_box_column_index = bounding_box_column_index
         self.landmark_column_index = landmark_column_index
 
@@ -365,19 +363,15 @@ class TransformAndLoad(Dataset):
         image_array = cv2.imread(str(image_path))
         
         if self.apply_face_cropping and self.bounding_box_column_index:
-            assert self.resize_to 
             assert not self.apply_face_alignment
     
-            image_array = cv2.resize(image_array, self.resize_to)
             bounding_box_index_start, bounding_box_index_end = self.bounding_box_column_index
             x_min, y_min, x_max, y_max = self.csv_file.iloc[idx, bounding_box_index_start:bounding_box_index_end+1].astype(int)
             image_array = image_array[y_min:y_max, x_min:x_max]
 
         if self.apply_face_alignment and self.landmark_column_index:
-            assert self.resize_to
             assert not self.apply_face_cropping
 
-            image_array = cv2.resize(image_array, self.resize_to)
             src = np.array([
             [38.2946, 51.6963],
             [73.5318, 51.5014],
