@@ -28,16 +28,3 @@ testing_pipeline = transforms.Compose([
     transforms.ToTensor(),
 ])
 
-test_dataset = TransformAndLoad(parent_directory=Path(parent_directory), 
-                                extension="jpg", 
-                                csv_file=test_dataset_csv, 
-                                # transform=testing_pipeline,
-                                is_bbox_available=True,
-                                resize_to=(640,480)
-                                )
-
-for index, value in enumerate(test_dataset):
-    image, label = test_dataset.__getitem__(index)[0], test_dataset.__getitem__(index)[1]
-    cv2.imshow(label, image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
