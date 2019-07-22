@@ -56,7 +56,7 @@ class Extract():
         df.to_csv(dump_to, index=False)
 
 
-class TransformAndLoad():
+class TransformAndLoad(Dataset):
     def __init__(self, 
                 parent_directory: str, 
                 csv_file: str, 

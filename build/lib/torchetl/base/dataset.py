@@ -5,6 +5,7 @@ import re
 import numpy as np
 from collections import namedtuple
 
+
 class BaseDataset:
     def __init__(self, 
         parent_directory: PosixPath, 
