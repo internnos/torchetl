@@ -4,13 +4,13 @@ from typing import Iterable, Sequence, List, Tuple
 import re
 import numpy as np
 from collections import namedtuple
+from typing import Dict
 
 
 class BaseDataset:
     def __init__(self, 
         parent_directory: PosixPath, 
-        extension: str,
-        verbose: bool) -> None:
+        extension: str) -> None:
         """Base dataset to inherit from. Support for reading all files of a specific extension from a parent_directory directory
         
         Parameters
@@ -26,7 +26,6 @@ class BaseDataset:
         """
         self.parent_directory = parent_directory
         self.extension = extension
-        self.verbose = verbose
 		
     def read_files(self) -> Iterable:
         """ Return parent_directory directory
@@ -63,12 +62,17 @@ class BaseDataset:
         files = [file for file in self.read_files()]
         print(files[:n])
 
-    def create_dataset_array(self, labels: List[str]) -> Tuple[np.ndarray, np.ndarray]:
+
+    def create_dataset_array(self, mapping_of_current_label_and_desired_label: Dict[str, str], verbose: bool = True) -> Tuple[np.ndarray, np.ndarray]:
         """Create full dataset array from reading files. The columns are relative path to file and its label
 
         Parameters
         ----------
-        None
+        labels
+
+        Usage
+        ----------
+        labels = {"111": male, "112": female}
 
         Returns
         -------
@@ -85,14 +89,36 @@ class BaseDataset:
             # create posix path from tuple
             relative_path_with_name = Path(*relative_path_with_name)
             relative_path_without_name = relative_path_with_name.parent
-            for encoded_label, label in enumerate(labels):
+            for label, encoded_label in mapping_of_current_label_and_desired_label.items():
                 if re.search(label, str(relative_path_without_name)):
                     filename.append(str(relative_path_with_name))
                     target.append(encoded_label)
 
-        if self.verbose:
+        if verbose:
             print("Finished creating whole dataset array")
 
         dataset = Dataset(np.array(filename), np.array(target))
         return dataset
+
+    @staticmethod
+    def convert_label_array(mapping_of_current_label_and_desired_label, labels):
+        """Create full dataset array from reading files. The columns are relative path to file and its label
+
+        Parameters
+        ----------
+        labels
+
+        Usage
+        ----------
+        mapping_of_current_label_and_desired_label = {"male": 0, "female": 1}
+
+        Returns
+        -------
+        Tuple of X and y	
+        """
+        for current_label, desired_label in mapping_of_current_label_and_desired_label.items():
+            labels[current_label == labels] = desired_label
+        return labels
+
+
 
