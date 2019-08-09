@@ -9,9 +9,9 @@ from typing import Dict
 
 class BaseDataset:
     def __init__(self, 
-        parent_directory: PosixPath, 
+        parent_directory: str, 
         extension: str) -> None:
-        """Base dataset to inherit from. Support for reading all files of a specific extension from a parent_directory directory
+        """Base dataset to inherit from. Support for reading all files of a specific extension from a parent directory
         
         Parameters
         ----------
@@ -23,12 +23,19 @@ class BaseDataset:
         Returns
         -------
         None	
+
+        Usage
+        ----------
+        parent_directory = 'data'
+        extension = "jpg"
+
+        dataset = BaseDataset(parent_directory, extension)
         """
-        self.parent_directory = parent_directory
+        self.parent_directory = Path(parent_directory)
         self.extension = extension
 		
     def read_files(self) -> Iterable:
-        """ Return parent_directory directory
+        """ Construct iterable that extracts file path
 
         Parameters
         ----------
@@ -47,7 +54,7 @@ class BaseDataset:
             raise ValueError("Directory does not exist")
 
     def show_files(self, n: int = None) -> Sequence:
-        """ Show files to consume
+        """ Show files inside the iterable
 
         Parameters
         ----------
@@ -63,8 +70,11 @@ class BaseDataset:
         print(files[:n])
 
 
-    def create_dataset_array(self, mapping_of_current_label_and_desired_label: Dict[str, str], verbose: bool = True) -> Tuple[np.ndarray, np.ndarray]:
-        """Create full dataset array from reading files. The columns are relative path to file and its label
+    def create_dataset_array(
+        self, 
+        labels: List,
+        verbose: bool=True) -> Tuple[np.ndarray, np.ndarray]:
+        """Create full dataset array. The columns are relative path to file and its label
 
         Parameters
         ----------
@@ -76,7 +86,7 @@ class BaseDataset:
 
         Returns
         -------
-        Tuple of X and y	
+        namedtuple of X and y	
         """
         Dataset = namedtuple('Dataset', ['filename', 'target'])
 
@@ -89,10 +99,10 @@ class BaseDataset:
             # create posix path from tuple
             relative_path_with_name = Path(*relative_path_with_name)
             relative_path_without_name = relative_path_with_name.parent
-            for label, encoded_label in mapping_of_current_label_and_desired_label.items():
+            for label in labels:
                 if re.search(label, str(relative_path_without_name)):
                     filename.append(str(relative_path_with_name))
-                    target.append(encoded_label)
+                    target.append(label)
 
         if verbose:
             print("Finished creating whole dataset array")
@@ -102,7 +112,7 @@ class BaseDataset:
 
     @staticmethod
     def convert_label_array(mapping_of_current_label_and_desired_label, labels):
-        """Create full dataset array from reading files. The columns are relative path to file and its label
+        """Convert current 
 
         Parameters
         ----------
@@ -111,6 +121,7 @@ class BaseDataset:
         Usage
         ----------
         mapping_of_current_label_and_desired_label = {"male": 0, "female": 1}
+        convert_label_array(mapping_of_current_label_and_desired_label, )
 
         Returns
         -------
