@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: torchetl
-Version: 0.3.2
+Version: 0.3.3
 Summary: Efficiently Extract, Transform, and Load your dataset into PyTorch models
 Home-page: https://github.com/amajidsinar/torchetl
 Author: jedi
