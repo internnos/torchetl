@@ -52,7 +52,7 @@ class Extract():
 
     @staticmethod
     def dump_to_csv(x, y, dump_to):
-        df = pd.DataFrame(data=x, columns=y)
+        df = pd.DataFrame(data=np.c_[x, y])
         df.to_csv(dump_to, index=False)
 
 
