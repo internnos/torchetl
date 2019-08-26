@@ -187,10 +187,9 @@ class BaseDataset:
         -------
         Tuple of X and y	
         """
-        temp = []
+        labels = labels.astype("object")
         for current_label, desired_label in mapping_of_current_label_and_desired_label.items():
-            temp = labels[current_label == labels].astype('object')
-            temp = desired_label
+            labels[current_label == labels] = desired_label
         return labels
 
 
