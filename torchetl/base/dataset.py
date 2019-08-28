@@ -160,7 +160,6 @@ class BaseDataset:
             filename.append(str(relative_path_with_name))
             target.append(label)
 
-        label.split()
         if verbose:
             print("Finished creating whole dataset array")
 
