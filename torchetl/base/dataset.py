@@ -155,7 +155,7 @@ class BaseDataset:
             relative_path_with_name = absolute_path.parts[number_of_parts_of_origin:]
             # create posix path from tuple
             relative_path_with_name = Path(*relative_path_with_name)
-            label = relative_path_with_name.stem.split('_')[1]
+            label = relative_path_with_name.stem.split(separator)[index_number]
             filename.append(str(relative_path_with_name))
             target.append(label)
 
