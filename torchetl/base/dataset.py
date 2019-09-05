@@ -151,12 +151,11 @@ class BaseDataset:
         filename = []
         for absolute_path in self.read_files():
             # parts are the tuple of "/", folder, and name that makes up a directory
-            
             number_of_parts_of_origin = len(self.parent_directory.parts)
             relative_path_with_name = absolute_path.parts[number_of_parts_of_origin:]
             # create posix path from tuple
             relative_path_with_name = Path(*relative_path_with_name)
-            label = str(absolute_path.name).strip(self.extension).split(separator)[index_number]
+            label = relative_path_with_name.stem.split('_')[1]
             filename.append(str(relative_path_with_name))
             target.append(label)
 
